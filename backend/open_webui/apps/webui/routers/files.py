@@ -50,7 +50,64 @@ def upload_file(file: UploadFile = File(...), user=Depends(get_verified_user)):
         name = filename
         filename = f"{id}_{filename}"
         contents, file_path = Storage.upload_file(file.file, filename)
+        file_item = Files.insert_new_file(
+            user.id,
+            FileForm(
+                **{
+                    "id": id,
+                    "filename": name,
+                    "path": file_path,
+                    "meta": {
+                        "name": name,
+                        "content_type": file.content_type,
+                        "size": len(contents),
+                    },
+                }
+            ),
+        )
 
+        try:
+            # process_file(ProcessFileForm(file_id=id))
+            file_item = Files.get_file_by_id(id=id)
+        except Exception as e:
+            log.exception(e)
+            log.error(f"Error processing file: {file_item.id}")
+            file_item = FileModelResponse(
+                **{
+                    **file_item.model_dump(),
+                    "error": str(e.detail) if hasattr(e, "detail") else str(e),
+                }
+            )
+
+        if file_item:
+            return file_item
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ERROR_MESSAGES.DEFAULT("Error uploading file"),
+            )
+
+    except Exception as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=ERROR_MESSAGES.DEFAULT(e),
+        )
+
+
+@router.post("/minio", response_model=FileModelResponse)
+def upload_file_2minio(file: UploadFile = File(...), user=Depends(get_verified_user)):
+    log.info(f"upload_file_2minio_file.content_type: {file.content_type}")
+    try:
+        unsanitized_filename = file.filename
+        filename = os.path.basename(unsanitized_filename)
+
+        # replace filename with uuid
+        id = str(uuid.uuid4())
+        name = filename
+        filename = f"{id}_{filename}"
+        ##oss存储
+        contents, file_path = Storage.upload_file(file.file, filename)
         file_item = Files.insert_new_file(
             user.id,
             FileForm(

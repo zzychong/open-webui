@@ -16,18 +16,21 @@ from open_webui.constants import ERROR_MESSAGES
 ####################################
 
 OPEN_WEBUI_DIR = Path(__file__).parent  # the path containing this file
-print(OPEN_WEBUI_DIR)
 
 BACKEND_DIR = OPEN_WEBUI_DIR.parent  # the path containing this file
 BASE_DIR = BACKEND_DIR.parent  # the path containing the backend/
 
-print(BACKEND_DIR)
-print(BASE_DIR)
+####################################
+# ENV (dev,test,prod)
+####################################
+
+ENV = os.environ.get("ENV", "dev")
+print(f"ENV: {ENV}")
 
 try:
     from dotenv import find_dotenv, load_dotenv
 
-    load_dotenv(find_dotenv(str(BASE_DIR / ".env")))
+    load_dotenv(find_dotenv(str(BASE_DIR / (ENV + ".env"))))
 except ImportError:
     print("dotenv not installed, skipping...")
 
@@ -52,6 +55,14 @@ if USE_CUDA.lower() == "true":
         DEVICE_TYPE = "cpu"
 else:
     DEVICE_TYPE = "cpu"
+
+####################################
+# MINIO
+####################################
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "192.168.24.137:9002")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "admin")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "Qazxsw!#%@$_13")
+MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME", "smartgpt")
 
 
 ####################################
@@ -108,11 +119,7 @@ WEBUI_URL = os.environ.get("WEBUI_URL", "http://localhost:3000")
 WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"
 
 
-####################################
-# ENV (dev,test,prod)
-####################################
 
-ENV = os.environ.get("ENV", "dev")
 
 FROM_INIT_PY = os.environ.get("FROM_INIT_PY", "False").lower() == "true"
 

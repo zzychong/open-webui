@@ -2,7 +2,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 import shutil
-
+from contextlib import closing
 
 from typing import BinaryIO, Tuple, Optional, Union
 
@@ -17,10 +17,17 @@ from open_webui.config import (
     UPLOAD_DIR,
 )
 
+from open_webui.env import (
+    MINIO_ENDPOINT,
+    MINIO_ACCESS_KEY,
+    MINIO_SECRET_KEY,
+    MINIO_BUCKET_NAME,
+)
 
 import boto3
 from botocore.exceptions import ClientError
 from typing import BinaryIO, Tuple, Optional
+from minio import Minio
 
 
 class StorageProvider:
@@ -32,6 +39,17 @@ class StorageProvider:
 
         if self.storage_provider == "s3":
             self._initialize_s3()
+        if self.storage_provider == "minio":
+            self._initialize_minio()
+
+    def _initialize_minio(self) -> None:
+        self.minio_client = Minio(
+            endpoint=MINIO_ENDPOINT,
+            access_key=MINIO_ACCESS_KEY,
+            secret_key=MINIO_SECRET_KEY,
+            secure=False
+        )
+        self.bucket_name = MINIO_BUCKET_NAME
 
     def _initialize_s3(self) -> None:
         """Initializes the S3 client and bucket name if using S3 storage."""
@@ -57,6 +75,19 @@ class StorageProvider:
             )
         except ClientError as e:
             raise RuntimeError(f"Error uploading file to S3: {e}")
+
+    def _upload_to_minio(self, file: BinaryIO, filename: str):
+        """Handles uploading of the file to minio storage."""
+        if not self.minio_client:
+            raise RuntimeError("minio Client is not initialized.")
+
+        try:
+            file.seek(0, os.SEEK_END)
+            file_size = file.tell()
+            file.seek(0)
+            self.minio_client.put_object(self.bucket_name, filename, file, file_size)
+        except ClientError as e:
+            raise RuntimeError(f"Error uploading file to minio: {e}")
 
     def _upload_to_local(self, contents: bytes, filename: str) -> Tuple[bytes, str]:
         """Handles uploading of the file to local storage."""
@@ -132,13 +163,17 @@ class StorageProvider:
 
     def upload_file(self, file: BinaryIO, filename: str) -> Tuple[bytes, str]:
         """Uploads a file either to S3 or the local file system."""
+        file_path = ""
         contents = file.read()
         if not contents:
             raise ValueError(ERROR_MESSAGES.EMPTY_CONTENT)
-        contents, file_path = self._upload_to_local(contents, filename)
+        # contents, file_path = self._upload_to_local(contents, filename)
 
-        if self.storage_provider == "s3":
-            return self._upload_to_s3(file_path, filename)
+        # if self.storage_provider == "s3":
+        #     return self._upload_to_s3(file_path, filename)
+        if self.storage_provider == "minio":
+            self._upload_to_minio(file, filename)
+            file_path = self.minio_client.presigned_get_object(self.bucket_name, filename)
         return contents, file_path
 
     def get_file(self, file_path: str) -> str:

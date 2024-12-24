@@ -86,8 +86,12 @@
 	onMount(() => {});
 </script>
 
-<div class="m-auto w-full max-w-6xl px-2 xl:px-20 translate-y-6 py-24 text-center">
-	{#if $temporaryChatEnabled}
+<!-- <div class="m-auto w-full max-w-6xl px-2 xl:px-20 translate-y-6 py-40 text-center" style="background-color: #D9E1FF;"> -->
+	<div
+	class="m-auto w-full px-0 py-40 text-center"
+	style="min-height: 100vh; width: 100vw; background-color: #D9E1FF; display: flex; flex-direction: column; justify-content: center;"
+>
+		{#if $temporaryChatEnabled} 
 		<Tooltip
 			content="This chat won't appear in history and your messages will not be saved."
 			className="w-full flex justify-center mb-0.5"
@@ -103,8 +107,8 @@
 		class="w-full text-3xl text-gray-800 dark:text-gray-100 font-medium text-center flex items-center gap-4 font-primary"
 	>
 		<div class="w-full flex flex-col justify-center items-center">
-			<div class="flex flex-row justify-center gap-3 sm:gap-3.5 w-fit px-5">
-				<div class="flex flex-shrink-0 justify-center">
+       <div class="flex flex-col md:flex-row justify-center gap-2 md:gap-3.5 w-fit">
+        <div class="flex flex-col flex-shrink-0 justify-center items-center">
 					<div class="flex -space-x-4 mb-0.5" in:fade={{ duration: 100 }}>
 						{#each models as model, modelIdx}
 							<Tooltip
@@ -123,8 +127,8 @@
 										src={model?.info?.meta?.profile_image_url ??
 											($i18n.language === 'dg-DG'
 												? `/doge.png`
-												: `${WEBUI_BASE_URL}/static/favicon.png`)}
-										class=" size-9 sm:size-10 rounded-full border-[1px] border-gray-200 dark:border-none"
+                : `/logo.png`)}
+              class="w-44.8 h-16 "
 										alt="logo"
 										draggable="false"
 									/>
@@ -132,15 +136,16 @@
 							</Tooltip>
 						{/each}
 					</div>
-				</div>
-
-				<div class=" text-3xl sm:text-4xl line-clamp-1" in:fade={{ duration: 100 }}>
-					{#if models[selectedModelIdx]?.name}
-						{models[selectedModelIdx]?.name}
+         <div class=" capitalize line-clamp-1 text-3xl md:text-4xl" in:fade={{ duration: 100 }}>
+         {#if models[selectedModelIdx]?.info}
+          {models[selectedModelIdx]?.info?.name}
 					{:else}
 						{$i18n.t('Hello, {{name}}', { name: $user.name })}
 					{/if}
 				</div>
+        </div>
+   
+        
 			</div>
 
 			<div class="flex mt-1 mb-2">
